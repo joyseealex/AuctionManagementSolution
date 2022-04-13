@@ -5,12 +5,12 @@ namespace AuctionManagement
 {
     public interface IAuctionsManager
     {
-        List<AuctionsViewModel> GetAllAuctions();
+        Task<List<AuctionsViewModel>> GetAllAuctions();
+
+        Task<AuctionsViewModel> GetAuctionById(int auctionId);
 
         Task<AuctionDetailsViewModel> GetAuctionDetailsById(int auctionId);
 
         bool AddOrEditAuction(AuctionsViewModel auctionVM);
-
-        bool AddOrEditAuction(AuctionItemViewModel auctionItemVM);
     }
 }

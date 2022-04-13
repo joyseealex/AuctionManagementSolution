@@ -1,15 +1,15 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AuctionManagement
 {
     public interface IAuctionDetailsRetreiver
     {
-        DataTable GetAllAuctions();
+        Task<IEnumerable<Auctions>> GetAllAuctions();
 
-        Task<AuctionDetailsViewModel> GetAuctionDetailsByIdAsync(int auctionId);
+        Task<IEnumerable<AuctionDetails>> GetAuctionDetailsByIdAsync(int auctionId);
 
-        void AddOrEditAuction(AuctionsViewModel auctionsVM);
+        void AddOrEditAuction(AuctionsViewModel auctionVM);
 
         void AddOrEditAuctionItem(AuctionItemViewModel auctionItemsVM);
     }

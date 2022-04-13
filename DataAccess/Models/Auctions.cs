@@ -10,6 +10,6 @@ namespace AuctionManagement
 
         public DateTime AuctionDate { get; set; }
 
-        public int AuctionItemsCount { get; set; }
+        public int TotalAuctionItems { get; set; }
     }
 }

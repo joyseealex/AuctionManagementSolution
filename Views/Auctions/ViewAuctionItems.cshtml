@@ -1,0 +1,71 @@
+﻿@model AuctionDetailsViewModel
+
+@{
+    ViewData["Title"] = @Model.Auction.Description;
+}
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#auctionItems td:nth-child(3)").each(function () {
+            if (parseInt($(this).text(), 10) >= 100) {
+                $(this).parent("tr").css("background-color", "red");
+            }
+        });
+    });
+</script>
+
+<div class="jumbotron">
+    <h1 class="text-center">@ViewData["Title"]</h1>
+</div>
+
+@if (Model.Auction != null)
+{
+    <table id="auctionItems" class="table table-bordered">
+        <thead class="thead-light">
+            <tr>
+                <th>
+                    Description
+                </th>
+                <th>
+                    Auction Date
+                </th>
+                <th>
+                    <a asp-action="AddOrEditAuctionItems">Add New Auction Item</a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.AuctionItems != null)
+            {
+                @foreach (var item in Model.AuctionItems)
+                {
+                    <tr class="@item.ItemId">
+                        <td style="display:none">
+                            @item.ItemId
+                        </td>
+                        <td>
+                            @item.ItemDescription
+                        </td>
+                        <td style="text-align:center">
+                            @item.StartPrice
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3" style="text-align:center">
+                        No items to display
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

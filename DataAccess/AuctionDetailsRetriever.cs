@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace AuctionManagement
@@ -20,37 +19,45 @@ namespace AuctionManagement
             ConnectionString = Configuration.GetConnectionString("DefaultConnection");
         }
 
-        public DataTable GetAllAuctions()
+        public async Task<IEnumerable<Auctions>> GetAllAuctions()
         {
-            DataTable dTable = new DataTable();
-
-            using (SqlConnection sqlConnection = new SqlConnection(ConnectionString))
-            {
-                Stopwatch sw = Stopwatch.StartNew();
-                sqlConnection.Open();
-                SqlDataAdapter sqlAda = new SqlDataAdapter("ViewAllAuctions", sqlConnection);
-                sqlAda.SelectCommand.CommandType = CommandType.StoredProcedure;
-                sqlAda.Fill(dTable);
-            }
-
-            return dTable;
-        }
-
-        public async Task<AuctionDetailsViewModel> GetAuctionDetailsByIdAsync(int auctionId)
-        {
-            var auctionDetailsVM = new AuctionDetailsViewModel();
 
             var sql = $" SELECT DISTINCT " +
                       $" AU.AUCTIONID, " +
                       $" AU.DESCRIPTION, " +
                       $" AU.AUCTIONDATE, " +
+                      $" COUNT(ITEMID) as TotalAuctionItems " +
+                      $" FROM AUCTIONS AU " +
+                      $" LEFT JOIN AUCTIONITEMS AI " +
+                      $" ON AU.AUCTIONID = AI.AUCTIONID " +
+                      $" GROUP BY AU.AUCTIONID, AU.DESCRIPTION, AU.AUCTIONDATE ";
+
+            IEnumerable<Auctions> data = null;
+
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                data = await db.QueryAsync<Auctions>(sql)
+                                .ConfigureAwait(false);
+                sw.Stop();
+            }
+
+            return data;
+        }
+
+        public async Task<IEnumerable<AuctionDetails>> GetAuctionDetailsByIdAsync(int auctionId)
+        {
+            var sql = $" SELECT DISTINCT " +
+                      $" AU.AUCTIONID, " +
+                      $" AU.DESCRIPTION AS AUCTIONDESCRIPTION, " +
+                      $" AU.AUCTIONDATE, " +
                       $" AI.ITEMID, " +
-                      $" AI.DESCRIPTION, " +
+                      $" AI.DESCRIPTION AS ITEMDESCRIPTION, " +
                       $" AI.STARTPRICE " +
                       $" FROM AUCTIONITEMS AI " +
                       $" LEFT JOIN AUCTIONS AU " +
                       $" ON AU.AUCTIONID = AI.AUCTIONID " +
-                      $" WHERE AU.AUCTIONID = {nameof(auctionId)}";
+                      $" WHERE AI.AUCTIONID = {auctionId}";
 
             IEnumerable<AuctionDetails> data = null;
 
@@ -60,48 +67,24 @@ namespace AuctionManagement
                 data = await db.QueryAsync<AuctionDetails>(sql, new { auctionId })
                                 .ConfigureAwait(false);
                 sw.Stop();
-            }
+            }            
 
-            if (data != null && data.Any())
-            {               
-                var auctionItems = new List<AuctionItems>();
-
-                foreach (var item in data)
-                {
-                    auctionDetailsVM.Auction = new Auctions
-                    {
-                        AuctionDate = item.AuctionDate,
-                        AuctionId = item.AuctionId,
-                        Description = item.AuctionDescription
-                    };
-
-                    auctionItems.Add(new AuctionItems
-                    {
-                        ItemId = item.ItemId,
-                        ItemDescription = item.ItemDescription,
-                        StartPrice = item.StartPrice
-                    });
-                }
-
-                auctionDetailsVM.AuctionItems = auctionItems;
-            }
-
-            return auctionDetailsVM;
+            return data;
         }
 
-        public void AddOrEditAuction(AuctionsViewModel auctionsVM)
+        public void AddOrEditAuction(AuctionsViewModel auctionVM)
         {
             using SqlConnection sqlConnection = new SqlConnection(ConnectionString);
             Stopwatch sw = Stopwatch.StartNew();
             sqlConnection.Open();
-            SqlCommand sqlCmd = new SqlCommand("ViewAuctionItemsById", sqlConnection)
+            SqlCommand sqlCmd = new SqlCommand("AddOrEditAuctions", sqlConnection)
             {
                 CommandType = CommandType.StoredProcedure
             };
 
-            sqlCmd.Parameters.AddWithValue("AuctionId", auctionsVM.AuctionId);
-            sqlCmd.Parameters.AddWithValue("Description", auctionsVM.Description);
-            sqlCmd.Parameters.AddWithValue("AuctionDate", auctionsVM.AuctionItemCount);
+            sqlCmd.Parameters.AddWithValue("AuctionId", auctionVM.AuctionId);
+            sqlCmd.Parameters.AddWithValue("Description", auctionVM.Description);
+            sqlCmd.Parameters.AddWithValue("AuctionDate", auctionVM.AuctionDate);
             sqlCmd.ExecuteNonQuery();
         }
 

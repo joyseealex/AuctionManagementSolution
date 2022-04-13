@@ -16,34 +16,44 @@ namespace AuctionManagement.Controllers
             AuctionsManager = auctionsManager ?? throw new ArgumentNullException(nameof(auctionsManager));
         }
 
-        // GET: Auctions
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var auctionsList = AuctionsManager.GetAllAuctions();
+            var auctionsList = await AuctionsManager.GetAllAuctions().ConfigureAwait(false);
             return View(auctionsList);
         }
-
-        // GET: Auctions/AddOrEditAuctions/
+        
         public async Task<IActionResult> AddOrEditAuctions(int? id)
         {
-            var auctionsList = new AuctionDetailsViewModel();
+            var auctionDetails = new AuctionsViewModel();
 
             if (id != null)
-                auctionsList = await AuctionsManager.GetAuctionDetailsById((int)id).ConfigureAwait(false);
+                auctionDetails = await AuctionsManager.GetAuctionById((int)id).ConfigureAwait(false);
 
-            return View(auctionsList);
+            return View(auctionDetails);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AddOrEditAuctions(int id, [Bind("AuctionId,Description,AuctionDate")] Auctions auctionsModel)
+        public IActionResult AddOrEditAuctions(int id, [Bind("AuctionId,Description,AuctionDate")] AuctionsViewModel auctionVM)
         {
             if (ModelState.IsValid)
             {
+                var isAuctionCreatedOrEdited = AuctionsManager.AddOrEditAuction(auctionVM);
+
                 return RedirectToAction(nameof(Index));
             }
 
-            return View();
+            return RedirectToAction(nameof(ViewAuctionItems));
+        }
+
+        public async Task<IActionResult> ViewAuctionItems(int? id)
+        {
+            var auctionItems = new AuctionDetailsViewModel();
+
+            if (id != null)
+                auctionItems = await AuctionsManager.GetAuctionDetailsById((int)id).ConfigureAwait(false);
+
+            return View(auctionItems);
         }
     }
 }

@@ -18,6 +18,9 @@
                 Auction Date
             </th>
             <th>
+                Number of Items
+            </th>
+            <th>
                 <a asp-action="AddOrEditAuctions">Add New Auction</a>
             </th>
         </tr>
@@ -33,12 +36,11 @@
                 @Model[i].AuctionDate
             </td>
             <td>
-                @Model[i].AuctionItemCount
+                @Model[i].TotalAuctionItems
             </td>
             <td>
-                <a asp-action="Edit" asp-route-id="@Model[i].AuctionId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@Model[i].AuctionId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@Model[i].AuctionId">Delete</a>
+                <a asp-action="AddOrEditAuctions" asp-route-id="@Model[i].AuctionId">Edit</a> |
+                <a asp-action="ViewAuctionItems" asp-route-id="@Model[i].AuctionId">View Auction Items</a>
             </td>
         </tr>
         }

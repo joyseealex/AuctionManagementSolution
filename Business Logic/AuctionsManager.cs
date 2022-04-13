@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AuctionManagement
@@ -16,21 +17,28 @@ namespace AuctionManagement
             AuctionDetailsRetreiver = auctionDetailsRetreiver;
         }
 
-        public List<AuctionsViewModel> GetAllAuctions()
+        public async Task<AuctionsViewModel> GetAuctionById(int auctionId)
+        {
+            IEnumerable<AuctionsViewModel> auctionsList = await GetAllAuctions().ConfigureAwait(false);
+            return auctionsList.Where(x => x.AuctionId == auctionId).FirstOrDefault();
+        }
+
+        public async Task<List<AuctionsViewModel>> GetAllAuctions()
         {
             var auctions = new List<AuctionsViewModel>();
 
             try
             {
-                var auctionsDataTable = AuctionDetailsRetreiver.GetAllAuctions();
+                var auctionsList = await AuctionDetailsRetreiver.GetAllAuctions().ConfigureAwait(false);
 
-                for (int i = 0; i < auctionsDataTable.Rows.Count; i++)
+                foreach (var item in auctionsList)
                 {
                     auctions.Add(new AuctionsViewModel
                     {
-                        AuctionId = Convert.ToInt32(auctionsDataTable.Rows[i]["AuctionId"]),
-                        Description = auctionsDataTable.Rows[i]["Description"].ToString(),
-                        AuctionItemCount = Convert.ToInt32(auctionsDataTable.Rows[i]["AuctionItemCount"])
+                        AuctionId = Convert.ToInt32(item.AuctionId),
+                        Description = item.Description,
+                        AuctionDate = item.AuctionDate,
+                        TotalAuctionItems = Convert.ToInt32(item.TotalAuctionItems)
                     });
                 }
             }
@@ -44,18 +52,51 @@ namespace AuctionManagement
 
         public async Task<AuctionDetailsViewModel> GetAuctionDetailsById(int auctionId)
         {
-            var auctionItems = new AuctionDetailsViewModel();
+            var auctionItemsVM = new AuctionDetailsViewModel();
 
             try
             {
-                auctionItems = await AuctionDetailsRetreiver.GetAuctionDetailsByIdAsync(auctionId).ConfigureAwait(false);
+                var auctionItemsList = await AuctionDetailsRetreiver.GetAuctionDetailsByIdAsync(auctionId).ConfigureAwait(false);
+                var auctionItems = new List<AuctionItems>();
+
+                if (auctionItemsList.ToList().Count > 0)
+                {
+                    foreach (var item in auctionItemsList)
+                    {
+                        auctionItemsVM.Auction = new Auctions
+                        {
+                            AuctionDate = item.AuctionDate,
+                            AuctionId = item.AuctionId,
+                            Description = item.AuctionDescription
+                        };
+
+                        auctionItems.Add(new AuctionItems
+                        {
+                            ItemId = item.ItemId,
+                            ItemDescription = item.ItemDescription,
+                            StartPrice = item.StartPrice
+                        });
+                    }
+
+                    auctionItemsVM.AuctionItems = auctionItems;
+                }
+                else
+                {
+                    var auctionDetails = await GetAuctionById(auctionId).ConfigureAwait(false);
+                    auctionItemsVM.Auction = new Auctions
+                    {
+                        AuctionDate = auctionDetails.AuctionDate,
+                        AuctionId = auctionDetails.AuctionId,
+                        Description = auctionDetails.Description
+                    };
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
             }
 
-            return auctionItems;
+            return auctionItemsVM;
         }
 
         public bool AddOrEditAuction(AuctionsViewModel auctionVM)
@@ -63,21 +104,6 @@ namespace AuctionManagement
             try
             {
                 AuctionDetailsRetreiver.AddOrEditAuction(auctionVM);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ex.Message);
-                return false;
-            }
-
-            return true;
-        }
-
-        public bool AddOrEditAuction(AuctionItemViewModel auctionItemVM)
-        {
-            try
-            {
-                AuctionDetailsRetreiver.AddOrEditAuctionItem(auctionItemVM);
             }
             catch (Exception ex)
             {
